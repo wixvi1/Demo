@@ -1,13 +1,10 @@
 ﻿using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.PhantomJS;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Demo
@@ -20,73 +17,86 @@ namespace Demo
             InitializeComponent();
         }
 
+        //Opens browser
         private void OpenBrowser(object sender, EventArgs e)
         {
-            Browser = new ChromeDriver();
-            Browser.Navigate().GoToUrl("http://google.com");//Go to google;
-            Browser.FindElement(By.Id("lst-ib")).SendKeys("Lego" + OpenQA.Selenium.Keys.Enter);//Find needed element and enter text, then click enter
+            if (Browser == null)
+            {
+                Browser = new ChromeDriver();// opens browser
+                Browser.Manage().Window.Maximize();
+                Browser.Navigate().GoToUrl("http://google.com");
+            }
         }
 
+        //Closes browser
         private void CloseBrowser(object sender, EventArgs e)
         {
             Browser.Quit();//Closes browser
         }
 
-        private void Test(object sender, EventArgs e)
+        //Example of how to execute javascript on client
+        private void ExecuteJs(object sender, EventArgs e)
         {
-            Browser = new ChromeDriver();
-            Browser.Navigate().GoToUrl("http://yandex.ru");
-            Browser.FindElement(By.ClassName("desk-notif-card__login-enter-expanded")).Click();
-            Browser.FindElement(By.Name("login")).SendKeys("Zodiacasti");
-            Browser.FindElement(By.Name("passwd")).SendKeys("princpersii");
-            Browser.FindElement(By.ClassName("passport-Button")).Click();
+            if (Browser == null)
+                Browser = new ChromeDriver();
+            Browser.Manage().Window.Maximize();
+            IJavaScriptExecutor jse = Browser as IJavaScriptExecutor;
+            jse.ExecuteScript("alert('test')");
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        //Gets all actual news from main yandex page
+        private void GetNews(object sender, EventArgs e)
         {
-            Browser = new ChromeDriver();
-            int i = 1;
+            int i = 1;//counter of news
+            TextBox.Clear();
+            if (Browser == null)
+                Browser = new ChromeDriver();
+            Browser.Manage().Window.Maximize();           
             Browser.Navigate().GoToUrl("http://yandex.ru");
-            List<IWebElement> News = Browser.FindElements(By.CssSelector("#tabnews_newsc a")).Where(x => x.Text != "").ToList();
-            foreach(var item in News)
+            List<IWebElement> News = Browser.FindElements(By.CssSelector("#tabnews_newsc a")).Where(x => x.Text != "").ToList();// finds all the news with given css selector
+            foreach (var item in News)
             {
-                textBox1.AppendText(i + ") " + item.Text + "\n");
+                TextBox.AppendText(i + ") " + item.Text + "\n");
                 i++;
             }
         }
 
-        private void ExecuteJs(object sender, EventArgs e)
+        // Logs in to yandex mail
+        private void Login(object sender, EventArgs e)
         {
-            IJavaScriptExecutor jse = Browser as IJavaScriptExecutor;
-            jse.ExecuteScript("alert('ti che?')");
+            if(Browser == null)
+                Browser = new ChromeDriver();
+            Browser.Manage().Window.Maximize();
+            Browser.Navigate().GoToUrl("http://yandex.ru");
+            Browser.FindElement(By.ClassName("desk-notif-card__login-enter-expanded")).Click();
+            Browser.FindElement(By.Name("login")).SendKeys("Zodiacasti");//provide login
+            Browser.FindElement(By.Name("passwd")).SendKeys("princpersii");//prodivde password
+            Browser.FindElement(By.ClassName("passport-Button")).Click();
         }
 
-        private void SwitchTab(object sender, EventArgs e)
+        //Simple example of threads on client side
+        private void Thread(object sender, EventArgs e)
         {
-            string tab = FindWindow("habr");
-            Browser.SwitchTo().Window(tab);
-            System.Windows.Forms.MessageBox.Show(Browser.Title + "\r\n" + Browser.Url);
+            if (Browser == null)
+                Browser = new ChromeDriver();
+            Browser.Manage().Window.Maximize();
+            Browser.Navigate().GoToUrl("https://www.degraeve.com/reference/simple-ajax-example.php");
+            Browser.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
+            Browser.FindElement(By.CssSelector("input[value='Go']")).Click();
+            TextBox.Text = Browser.FindElement(By.CssSelector("#result p")).Text;
         }
 
-        private string FindWindow(string value)
+        //Browser that works on the background
+        private void InvisibleBrowser(object sender, EventArgs e)
         {
-            string currentWindow = Browser.CurrentWindowHandle;
-            string result = "";
-
-            for (int i = 0; i < Browser.WindowHandles.Count; i++)
-            {
-                if (Browser.WindowHandles[i] != currentWindow)
-                {
-                    Browser.SwitchTo().Window(Browser.WindowHandles[i]);
-                    if (Browser.Url.Contains(value))
-                    {
-                        result = Browser.WindowHandles[i];
-                        break;
-                    }
-                }
-            }
-            Browser.SwitchTo().Window(currentWindow);
-            return result;
+            if (Browser != null)
+                Browser.Quit();
+            Browser = new PhantomJSDriver();
+            Browser.Navigate().GoToUrl("http://google.com");
+            (Browser as PhantomJSDriver).GetScreenshot().SaveAsFile("d:\\page1.jpg", ScreenshotImageFormat.Jpeg);
+            Browser.FindElement(By.Name("q")).SendKeys("Пирамиды" + OpenQA.Selenium.Keys.Return);
+            (Browser as PhantomJSDriver).GetScreenshot().SaveAsFile("d:\\page2.jpg", ScreenshotImageFormat.Jpeg);
+            MessageBox.Show("Screenshots are saved on disk D", "Done");
         }
     }
 }
